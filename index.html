@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlockHost - Panel de Control Pro</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+body {
+    background: #090d0a;
+    color: white;
+    min-height: 100vh;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 240px;
+    background: #0c120e;
+    border-right: 1px solid #243128;
+    padding: 25px 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.logo { font-size: 25px; font-weight: bold; margin-bottom: 35px; padding-left: 10px; }
+.logo span { color: #55e56c; }
+
+.nav button {
+    width: 100%; border: none; background: transparent;
+    color: #91a095; text-align: left; padding: 13px;
+    border-radius: 9px; margin-bottom: 6px; cursor: pointer; transition: 0.2s;
+}
+
+.nav button:hover, .nav .active { background: #18251b; color: white; }
+
+/* ===== MAIN ===== */
+.main { margin-left: 240px; padding: 35px; max-width: 1200px; }
+
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.header h1 { font-size: 30px; }
+.header p { color: #89958d; margin-top: 5px; }
+
+.user {
+    background: #121a15; border: 1px solid #29382e;
+    padding: 8px 15px; border-radius: 9px; cursor: pointer;
+    display: flex; align-items: center; gap: 10px; transition: 0.2s;
+}
+.user:hover { background: #19261e; }
+.user-avatar { font-size: 24px; }
+.verified-badge { color: #55e56c; font-size: 11px; font-weight: bold; }
+
+/* ===== STATS ===== */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+.card { background: #111812; border: 1px solid #26352b; border-radius: 13px; padding: 20px; }
+.card-title { color: #8e9b92; font-size: 13px; }
+.number { font-size: 30px; font-weight: bold; margin-top: 8px; }
+
+/* ===== SERVERS ===== */
+.server-header { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 15px; }
+.server-header h2 { font-size: 19px; }
+
+.create {
+    border: none; background: #55e56c; color: #071008;
+    font-weight: bold; padding: 12px 16px; border-radius: 9px; cursor: pointer;
+}
+.create:hover { background: #72ef86; }
+
+.server {
+    background: #111812; border: 1px solid #26352b;
+    border-radius: 13px; padding: 18px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+
+.server-name { font-size: 17px; font-weight: bold; margin-bottom: 7px; }
+.server-info { color: #8e9b92; font-size: 13px; line-height: 1.6; }
+
+.ip-tag {
+    background: #080d09; border: 1px solid #243529; padding: 3px 8px;
+    border-radius: 6px; color: #55e56c; font-family: monospace; font-size: 12px;
+    cursor: pointer; display: inline-block; margin-top: 4px;
+}
+.ip-tag:hover { background: #16261a; }
+
+.status { display: inline-block; font-size: 11px; padding: 4px 7px; border-radius: 6px; margin-left: 8px; }
+.online { background: #17351e; color: #6bed82; }
+.offline { background: #242a26; color: #9ba49e; }
+.starting { background: #3d3410; color: #fce300; }
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.action {
+    border: 1px solid #304037; background: #172019; color: white;
+    padding: 9px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.action:hover { background: #233328; }
+.start { border-color: #357b43; background: #16351e; color: #71ed85; }
+.stop { color: #ff777d; border-color: #592528; background: #33181a; }
+.btn-delete { color: #ff5555; border-color: #4a2222; }
+
+/* PROGRESS LOADER */
+.progress-bar-wrap {
+    width: 100%; background: #080d09; border-radius: 8px; height: 10px;
+    overflow: hidden; margin-top: 8px; display: none; border: 1px solid #243529;
+}
+.progress-bar-fill { width: 0%; height: 100%; background: #55e56c; transition: width 0.3s; }
+
+/* ===== MODALES ===== */
+.modal-background {
+    position: fixed; inset: 0; background: rgba(0,0,0,.8);
+    display: none; justify-content: center; align-items: center; padding: 20px; z-index: 100;
+}
+.modal { background: #111812; border: 1px solid #34473a; border-radius: 15px; padding: 25px; width: 100%; max-width: 550px; }
+.modal h2 { margin-bottom: 20px; }
+
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.full { grid-column: 1 / -1; }
+.field label { font-size: 12px; color: #9ba79f; }
+
+input, select {
+    background: #080d09; color: white; border: 1px solid #304037;
+    padding: 11px; border-radius: 8px; outline: none;
+}
+input:focus, select:focus { border-color: #55e56c; }
+
+.modal-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.cancel { border: 1px solid #304037; background: #172019; color: white; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+.confirm { border: none; background: #55e56c; color: #071008; font-weight: bold; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+
+/* SELECCIÓN DE SKIN */
+.skin-grid { display: flex; gap: 10px; margin-top: 10px; }
+.skin-item {
+    border: 2px solid #243529; background: #080d09; padding: 10px; border-radius: 8px;
+    cursor: pointer; font-size: 24px; text-align: center; flex: 1; transition: 0.2s;
+}
+.skin-item:hover, .skin-item.selected { border-color: #55e56c; background: #16261a; }
+
+/* ESTILO GOOGLE AUTH */
+.google-box { background: #ffffff; color: #202124; border-radius: 12px; padding: 30px; width: 100%; max-width: 440px; text-align: center; }
+.google-box h3 { font-size: 20px; margin-top: 10px; margin-bottom: 5px; color: #202124; }
+.google-box p { font-size: 14px; color: #5f6368; margin-bottom: 20px; }
+.google-input { width: 100%; padding: 14px; background: #fff !important; color: #202124 !important; border: 1px solid #dadce0 !important; border-radius: 6px !important; font-size: 15px; margin-bottom: 15px; }
+.btn-google { background: #1a73e8; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; }
+
+/* CONSOLA TERMINAL */
+.console-box {
+    background: #050806; border: 1px solid #243529; border-radius: 8px;
+    padding: 15px; height: 220px; font-family: 'Courier New', monospace;
+    font-size: 13px; color: #55e56c; overflow-y: auto; margin-bottom: 12px; line-height: 1.4;
+}
+.console-input-wrap { display: flex; gap: 8px; }
+.console-input-wrap input { flex: 1; }
+
+/* LISTA DE JUGADORES */
+.player-list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #080d09; border: 1px solid #243529; padding: 10px 14px;
+    border-radius: 8px; margin-bottom: 8px;
+}
+
+/* TOAST */
+.toast {
+    position: fixed; bottom: 20px; right: 20px; background: #18251c;
+    border: 1px solid #3a6842; padding: 13px 17px; border-radius: 9px; display: none; z-index: 200;
+}
+
+/* MOBILE */
+@media(max-width:700px){
+    .sidebar { width: 65px; padding: 20px 8px; }
+    .logo { font-size: 0; text-align: center; }
+    .logo span { font-size: 24px; }
+    .nav button { font-size: 0; text-align: center; }
+    .nav button:first-letter { font-size: 20px; }
+    .main { margin-left: 65px; padding: 20px; }
+    .stats { grid-template-columns: 1fr; }
+    .server { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .actions { width: 100%; }
+    .action { flex: 1; }
+    .form { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div>
+        <div class="logo">Block<span>Host</span></div>
+        <div class="nav">
+            <button class="active">▦ &nbsp; Dashboard</button>
+            <button onclick="openAuthModal()">👤 &nbsp; Registro / Perfil</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+    <div class="header">
+        <div>
+            <h1>Dashboard</h1>
+            <p>Administra tus servidores de Minecraft en tiempo real.</p>
+        </div>
+        <div class="user" onclick="openAuthModal()">
+            <span class="user-avatar" id="userAvatar">👨‍🌾</span> 
+            <div>
+                <span id="userName">jugador</span> 
+                <div class="verified-badge" id="verifiedBadge">🔴 No registrado</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats">
+        <div class="card">
+            <div class="card-title">SERVIDORES</div>
+            <div class="number" id="serverCount">0</div>
+        </div>
+        <div class="card">
+            <div class="card-title">EN LÍNEA</div>
+            <div class="number" id="onlineCount">0</div>
+        </div>
+        <div class="card">
+            <div class="card-title">JUGADORES TOTALES</div>
+            <div class="number" id="playerCount">0 / 0</div>
+        </div>
+    </div>
+
+    <!-- SERVER LIST -->
+    <div class="server-header">
+        <h2>Mis servidores</h2>
+        <button class="create" onclick="openModal()">＋ Crear servidor</button>
+    </div>
+
+    <div id="serverList"></div>
+</div>
+
+<!-- CREAR / EDITAR MODAL -->
+<div class="modal-background" id="modal">
+    <div class="modal">
+        <h2 id="modalTitle">Crear servidor</h2>
+        <input type="hidden" id="editIndex" value="-1">
+        
+        <div class="form">
+            <div class="field full">
+                <label>Nombre del Servidor</label>
+                <input id="serverName" placeholder="Mi Survival SMP">
+            </div>
+
+            <div class="field">
+                <label>Edición</label>
+                <select id="edition">
+                    <option>Bedrock</option>
+                    <option>Java</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Versión</label>
+                <select id="version">
+                    <option>1.21.x</option>
+                    <option>1.20.x</option>
+                    <option>1.19.x</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Modo de Juego</label>
+                <select id="mode">
+                    <option>Survival</option>
+                    <option>Creative</option>
+                    <option>Hardcore</option>
+                    <option>Skyblock</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Tipo de Mundo</label>
+                <select id="worldType">
+                    <option>Normal</option>
+                    <option>Superplano</option>
+                </select>
+            </div>
+
+            <div class="field full">
+                <label>Máximo de jugadores</label>
+                <input id="maxPlayers" type="number" value="10" min="1" max="100">
+            </div>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="cancel" onclick="closeModal()">Cancelar</button>
+            <button class="confirm" onclick="saveServer()">Guardar servidor</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL REGISTRO Y SELECCIÓN DE SKIN -->
+<div class="modal-background" id="authModal">
+    <!-- PASO 1: GOOGLE SIMULADOR -->
+    <div class="google-box" id="authStep1">
+        <svg width="28" height="28" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        <h3>Iniciar sesión con Google</h3>
+        <p>Para vincular tu cuenta con el servidor BlockHost</p>
+        <input type="email" id="googleEmail" class="google-input" placeholder="Correo electrónico" value="tu.correo@gmail.com">
+        <button class="btn-google" onclick="goToStep2()">Siguiente</button>
+        <div style="margin-top: 15px;"><a href="#" onclick="closeAuthModal()" style="color:#5f6368; font-size:12px; text-decoration:none;">Cancelar</a></div>
+    </div>
+
+    <!-- PASO 2: COMPLETA TU SKIN Y PERFIL -->
+    <div class="modal" id="authStep2" style="display:none;">
+        <h2>Configura tu Perfil</h2>
+        <div class="form">
+            <div class="field full">
+                <label>Nombre de Usuario</label>
+                <input id="regUsername" placeholder="Ej: GamerPro2026">
+            </div>
+            
+            <div class="field full">
+                <label>Elige tu Skin / Avatar</label>
+                <div class="skin-grid">
+                    <div class="skin-item selected" onclick="selectSkin(this, '👨‍🌾')">👨‍🌾<br><span style="font-size:10px;">Steve</span></div>
+                    <div class="skin-item" onclick="selectSkin(this, '👩‍🌾')">👩‍🌾<br><span style="font-size:10px;">Alex</span></div>
+                    <div class="skin-item" onclick="selectSkin(this, '🧟')">🧟<br><span style="font-size:10px;">Zombie</span></div>
+                    <div class="skin-item" onclick="selectSkin(this, '💥')">💥<br><span style="font-size:10px;">Creeper</span></div>
+                    <div class="skin-item" onclick="selectSkin(this, '🔮')">🔮<br><span style="font-size:10px;">Enderman</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="cancel" onclick="closeAuthModal()">Cancelar</button>
+            <button class="confirm" onclick="finishVerification()">Guardar Perfil</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CONSOLA CLI Y DESCARGA DE LOGS -->
+<div class="modal-background" id="consoleModal">
+    <div class="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h2 id="consoleTitle" style="margin:0;">Consola</h2>
+            <button class="action" onclick="downloadLogs()">📥 Descargar Logs</button>
+        </div>
+        <div class="console-box" id="consoleLogs"></div>
+        <div class="console-input-wrap">
+            <input type="text" id="consoleInput" placeholder="Escribe un comando (/op, /kick, /ban, /weather)..." onkeypress="handleConsoleKey(event)">
+            <button class="confirm" onclick="sendConsoleCommand()">Enviar</button>
+        </div>
+        <div class="modal-buttons">
+            <button class="cancel" onclick="closeConsoleModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL JUGADORES (KICK / BAN) -->
+<div class="modal-background" id="playersModal">
+    <div class="modal">
+        <h2>Jugadores Conectados</h2>
+        <div id="playersContainer" style="margin-top: 15px; max-height: 250px; overflow-y: auto;"></div>
+        <div class="modal-buttons">
+            <button class="cancel" onclick="closePlayersModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+let userData = { email: "", name: "jugador", avatar: "👨‍🌾", verified: false };
+let selectedAvatarTemp = "👨‍🌾";
+
+let servers = [
+    {
+        name: "Survival SMP", edition: "Bedrock", version: "1.21.x", mode: "Survival", worldType: "Normal",
+        max: 20, online: true, starting: false, ip: "bedrock.blockhost.net:19132",
+        activePlayers: ["Steve", "Alex_Gamer", "CreeperBoy99"],
+        logs: ["[INFO] Servidor encendido en puerto 19132.", "[INFO] Mundo cargado tipo: Normal."]
+    }
+];
+
+let activeConsoleIndex = -1;
+let activePlayersIndex = -1;
+
+function loadStorage() {
+    const localSrv = localStorage.getItem("blockhost_servers");
+    const localUser = localStorage.getItem("blockhost_user");
+    if (localSrv) servers = JSON.parse(localSrv);
+    if (localUser) userData = JSON.parse(localUser);
+    updateUserUI();
+}
+
+function saveData() {
+    localStorage.setItem("blockhost_servers", JSON.stringify(servers));
+    localStorage.setItem("blockhost_user", JSON.stringify(userData));
+    renderServers();
+}
+
+function updateUserUI() {
+    document.getElementById("userName").textContent = userData.name;
+    document.getElementById("userAvatar").textContent = userData.avatar;
+    const badge = document.getElementById("verifiedBadge");
+    badge.textContent = userData.verified ? "🟢 Verificado ✓" : "🔴 No registrado";
+    badge.style.color = userData.verified ? "#55e56c" : "#ff777d";
+}
+
+/* =========================
+   REGISTRO Y SELECCIÓN DE SKIN
+========================= */
+function openAuthModal() {
+    document.getElementById("authStep1").style.display = "block";
+    document.getElementById("authStep2").style.display = "none";
+    document.getElementById("authModal").style.display = "flex";
+}
+
+function closeAuthModal() { document.getElementById("authModal").style.display = "none"; }
+
+function goToStep2() {
+    const email = document.getElementById("googleEmail").value.trim();
+    if (!email || !email.includes("@")) { alert("Ingresa un correo válido."); return; }
+    userData.email = email;
+    document.getElementById("authStep1").style.display = "none";
+    document.getElementById("authStep2").style.display = "block";
+}
+
+function selectSkin(element, avatarEmoji) {
+    document.querySelectorAll('.skin-item').forEach(e => e.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedAvatarTemp = avatarEmoji;
+}
+
+function finishVerification() {
+    const user = document.getElementById("regUsername").value.trim() || "JugadorPro";
+    userData.name = user;
+    userData.avatar = selectedAvatarTemp;
+    userData.verified = true;
+    saveData();
+    closeAuthModal();
+    showToast("¡Perfil guardado correctamente! 🎉");
+}
+
+/* =========================
+   RENDERIZAR SERVIDORES
+========================= */
+function renderServers(){
+    const list = document.getElementById("serverList");
+    list.innerHTML = "";
+
+    servers.forEach((server, index) => {
+        const element = document.createElement("div");
+        element.className = "server";
+
+        let statusClass = server.online ? "online" : "offline";
+        let statusText = server.online ? "● ONLINE" : "● OFFLINE";
+        if (server.starting) { statusClass = "starting"; statusText = "⏳ INICIANDO..."; }
+
+        element.innerHTML = `
+            <div style="flex: 1;">
+                <div class="server-name">
+                    ${server.name}
+                    <span class="status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="server-info">
+                    ${server.edition} · ${server.version} · ${server.mode} (${server.worldType})<br>
+                    👥 <b>${server.activePlayers ? server.activePlayers.length : 0}/${server.max}</b> jugadores<br>
+                    <span class="ip-tag" onclick="copyIP('${server.ip}')">📋 IP: ${server.ip}</span>
+                </div>
+                <div class="progress-bar-wrap" id="progressWrap-${index}">
+                    <div class="progress-bar-fill" id="progressFill-${index}"></div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="action ${server.online ? "stop" : "start"}" onclick="toggleServer(${index})" ${server.starting ? "disabled" : ""}>
+                    ${server.online ? "⏹ Detener" : "▶ Iniciar"}
+                </button>
+                <button class="action" onclick="openPlayersModal(${index})">👥 Jugadores</button>
+                <button class="action" onclick="openConsoleModal(${index})">💻 Consola</button>
+                <button class="action" onclick="openEditModal(${index})">✏️ Editar</button>
+                <button class="action btn-delete" onclick="deleteServer(${index})">🗑️</button>
+            </div>
+        `;
+        list.appendChild(element);
+    });
+
+    updateStats();
+}
+
+function updateStats(){
+    let online = 0, players = 0, max = 0;
+    servers.forEach(s => {
+        if (s.online) online++;
+        players += (s.activePlayers ? s.activePlayers.length : 0);
+        max += Number(s.max);
+    });
+    document.getElementById("serverCount").textContent = servers.length;
+    document.getElementById("onlineCount").textContent = online;
+    document.getElementById("playerCount").textContent = players + " / " + max;
+}
+
+/* =========================
+   INICIAR CON LOADER Y DETENER
+========================= */
+function toggleServer(index){
+    const srv = servers[index];
+
+    if (!srv.online && !srv.starting) {
+        // PROCESO DE CARGA
+        srv.starting = true;
+        renderServers();
+
+        const wrap = document.getElementById(`progressWrap-${index}`);
+        const fill = document.getElementById(`progressFill-${index}`);
+        wrap.style.display = "block";
+
+        let percent = 0;
+        srv.logs.push("[SYSTEM] Iniciando instancia de servidor...");
+
+        const interval = setInterval(() => {
+            percent += 25;
+            fill.style.width = percent + "%";
+
+            if (percent === 50) srv.logs.push("[SYSTEM] Cargando configuración y chunks del mundo...");
+            if (percent === 75) srv.logs.push("[SYSTEM] Abriendo puertos y preparando conexión...");
+
+            if (percent >= 100) {
+                clearInterval(interval);
+                srv.starting = false;
+                srv.online = true;
+                srv.activePlayers = ["Steve", "Alex_Gamer"];
+                srv.logs.push("[SYSTEM] ¡Servidor encendido con éxito!");
+                saveData();
+                showToast("¡Servidor encendido! ▶");
+            }
+        }, 600);
+
+    } else if (srv.online) {
+        srv.online = false;
+        srv.activePlayers = [];
+        srv.logs.push("[SYSTEM] Servidor detenido por el usuario.");
+        saveData();
+        showToast("Servidor detenido ⏹");
+    }
+}
+
+/* COPIAR IP */
+function copyIP(ip) {
+    navigator.clipboard.writeText(ip);
+    showToast("¡IP copiada al portapapeles! 📋");
+}
+
+/* =========================
+   CREAR / EDITAR SERVIDOR
+========================= */
+function openModal(){
+    document.getElementById("modalTitle").textContent = "Crear servidor";
+    document.getElementById("editIndex").value = "-1";
+    document.getElementById("serverName").value = "";
+    document.getElementById("maxPlayers").value = "10";
+    document.getElementById("modal").style.display = "flex";
+}
+
+function openEditModal(index){
+    const srv = servers[index];
+    document.getElementById("modalTitle").textContent = "Editar servidor";
+    document.getElementById("editIndex").value = index;
+    document.getElementById("serverName").value = srv.name;
+    document.getElementById("edition").value = srv.edition;
+    document.getElementById("version").value = srv.version;
+    document.getElementById("mode").value = srv.mode;
+    document.getElementById("worldType").value = srv.worldType || "Normal";
+    document.getElementById("maxPlayers").value = srv.max;
+    document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal(){ document.getElementById("modal").style.display = "none"; }
+
+function saveServer(){
+    const name = document.getElementById("serverName").value.trim() || "Nuevo servidor";
+    const edition = document.getElementById("edition").value;
+    const version = document.getElementById("version").value;
+    const mode = document.getElementById("mode").value;
+    const worldType = document.getElementById("worldType").value;
+    const max = Number(document.getElementById("maxPlayers").value) || 10;
+    const editIndex = Number(document.getElementById("editIndex").value);
+
+    if (editIndex >= 0) {
+        servers[editIndex].name = name;
+        servers[editIndex].edition = edition;
+        servers[editIndex].version = version;
+        servers[editIndex].mode = mode;
+        servers[editIndex].worldType = worldType;
+        servers[editIndex].max = max;
+        showToast("Servidor actualizado ✓");
+    } else {
+        const randomPort = Math.floor(Math.random() * 8000 + 10000);
+        servers.push({
+            name, edition, version, mode, worldType,
+            activePlayers: [], max, online: false, starting: false,
+            ip: `mc.blockhost.net:${randomPort}`,
+            logs: ["[INFO] Servidor creado y listo."]
+        });
+        showToast("Servidor creado ✓");
+    }
+
+    closeModal();
+    saveData();
+}
+
+function deleteServer(index) {
+    if (confirm(`¿Eliminar "${servers[index].name}"?`)) {
+        servers.splice(index, 1);
+        saveData();
+        showToast("Servidor eliminado 🗑️");
+    }
+}
+
+/* =========================
+   CONSOLA Y DESCARGA DE LOGS
+========================= */
+function openConsoleModal(index) {
+    activeConsoleIndex = index;
+    const srv = servers[index];
+    document.getElementById("consoleTitle").textContent = `Consola: ${srv.name}`;
+    document.getElementById("consoleModal").style.display = "flex";
+    renderConsoleLogs();
+}
+
+function closeConsoleModal() { document.getElementById("consoleModal").style.display = "none"; activeConsoleIndex = -1; }
+
+function renderConsoleLogs() {
+    if (activeConsoleIndex < 0) return;
+    const box = document.getElementById("consoleLogs");
+    box.innerHTML = servers[activeConsoleIndex].logs.join("<br>");
+    box.scrollTop = box.scrollHeight;
+}
+
+function sendConsoleCommand() {
+    const input = document.getElementById("consoleInput");
+    const cmd = input.value.trim();
+    if (!cmd || activeConsoleIndex < 0) return;
+
+    const srv = servers[activeConsoleIndex];
+    srv.logs.push(`> ${cmd}`);
+
+    const parts = cmd.split(" ");
+    const command = parts[0].toLowerCase();
+    const arg = parts[1];
+
+    if (command === "/op") {
+        srv.logs.push(`[SYSTEM] Se otorgó permisos de Operador a ${arg || 'al usuario'}.`);
+    } else if (command === "/weather") {
+        srv.logs.push(`[SYSTEM] Clima cambiado a ${arg || 'clear'}.`);
+    } else if (command === "/kick" && arg) {
+        srv.activePlayers = srv.activePlayers.filter(p => p !== arg);
+        srv.logs.push(`[SYSTEM] Jugador ${arg} expulsado del servidor.`);
+    } else if (command === "/ban" && arg) {
+        srv.activePlayers = srv.activePlayers.filter(p => p !== arg);
+        srv.logs.push(`[SYSTEM] Jugador ${arg} BANEADO permanentemente.`);
+    } else {
+        srv.logs.push(`[BOT] Comando '${cmd}' ejecutado.`);
+    }
+
+    input.value = "";
+    saveData();
+    renderConsoleLogs();
+}
+
+function handleConsoleKey(e) { if (e.key === 'Enter') sendConsoleCommand(); }
+
+function downloadLogs() {
+    if (activeConsoleIndex < 0) return;
+    const srv = servers[activeConsoleIndex];
+    const text = srv.logs.join("\n");
+    const blob = new Blob([text], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `logs-${srv.name.replace(/\s+/g, '_')}.txt`;
+    a.click();
+}
+
+/* =========================
+   GESTIÓN DE JUGADORES (KICK / BAN)
+========================= */
+function openPlayersModal(index) {
+    activePlayersIndex = index;
+    renderPlayersList();
+    document.getElementById("playersModal").style.display = "flex";
+}
+
+function closePlayersModal() { document.getElementById("playersModal").style.display = "none"; }
+
+function renderPlayersList() {
+    const srv = servers[activePlayersIndex];
+    const container = document.getElementById("playersContainer");
+    container.innerHTML = "";
+
+    if (!srv.online || !srv.activePlayers || srv.activePlayers.length === 0) {
+        container.innerHTML = "<p style='color:#8e9b92; text-align:center;'>No hay jugadores conectados.</p>";
+        return;
+    }
+
+    srv.activePlayers.forEach(player => {
+        const item = document.createElement("div");
+        item.className = "player-list-item";
+        item.innerHTML = `
+            <span>🎮 <b>${player}</b></span>
+            <div>
+                <button class="action" onclick="kickPlayer('${player}')">Expulsar</button>
+                <button class="action stop" onclick="banPlayer('${player}')">Banear</button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function kickPlayer(name) {
+    const srv = servers[activePlayersIndex];
+    srv.activePlayers = srv.activePlayers.filter(p => p !== name);
+    srv.logs.push(`[SYSTEM] ${name} fue expulsado desde el panel.`);
+    saveData();
+    renderPlayersList();
+    showToast(`Jugador ${name} expulsado.`);
+}
+
+function banPlayer(name) {
+    const srv = servers[activePlayersIndex];
+    srv.activePlayers = srv.activePlayers.filter(p => p !== name);
+    srv.logs.push(`[SYSTEM] ${name} fue BANEADO desde el panel.`);
+    saveData();
+    renderPlayersList();
+    showToast(`Jugador ${name} baneado.`);
+}
+
+/* =========================
+   NOTIFICACIONES
+========================= */
+function showToast(message){
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.style.display = "block";
+    setTimeout(() => { toast.style.display = "none"; }, 2200);
+}
+
+loadStorage();
+renderServers();
+</script>
+</body>
+</html>
